@@ -6,7 +6,8 @@ and Portland, OR.
 ## Dregus: Mage Awakened
 
 Mage Awakened is the first installment of a series of storylines that take place
-on the world Dregus.
+on the world Dregus.  For more info, check out our 
+[blog](https://blog.deliriumgameworks.com)
 
 ## Getting Started
 
@@ -15,6 +16,7 @@ to reduce clutter in the repository with all of these files
 Ideally, changed import assets should be copied to the Assets tree (outside of
 imports), and only the copy should be modified.
 
-Download the imports package from 
-https://www.deliriumgameworks.com/dregus/mage-awakened/imports.zip
+Download the 
+[imports](https://www.deliriumgameworks.com/dregus/mage-awakened/imports.zip)
+package.
 
