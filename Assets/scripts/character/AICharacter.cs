@@ -52,6 +52,7 @@ public class AICharacter : MonoBehaviour {
     character = GetComponent<Character>();
     animatedCharacter = GetComponent<AnimatedCharacter>();
     getCollider().enabled = true;
+    lastAttackTime = 0f;
 
     searching = false;
     chill();
@@ -378,6 +379,8 @@ public class AICharacter : MonoBehaviour {
 
         characterAttackEvent.Invoke(this, attack);
 
+        animatedCharacter.attackAnimationFinished.AddListener(attackFinish);
+
         return true;
       }
     } else {
@@ -391,6 +394,10 @@ public class AICharacter : MonoBehaviour {
     }
 
     return false;
+  }
+
+  void attackFinish() {
+    lastAttackTime = Time.time;
   }
 
   void onHitListener(Attack attack, Collider collider) {

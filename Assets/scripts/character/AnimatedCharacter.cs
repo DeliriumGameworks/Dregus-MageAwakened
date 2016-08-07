@@ -1,7 +1,13 @@
 using UnityEngine;
+using UnityEngine.Events;
 using System.Collections;
 
+public class AttackAnimationFinished : UnityEvent {
+
+}
+
 public class AnimatedCharacter : MonoBehaviour {
+  public AttackAnimationFinished attackAnimationFinished = new AttackAnimationFinished();
   Character character;
   NavMeshAgent navMeshAgent;
 
@@ -138,6 +144,8 @@ public class AnimatedCharacter : MonoBehaviour {
     if (attack.weapon != null) {
       attack.weapon.clearListeners();
     }
+
+    attackAnimationFinished.Invoke();
   }
 
   public IEnumerator animateDeath() {

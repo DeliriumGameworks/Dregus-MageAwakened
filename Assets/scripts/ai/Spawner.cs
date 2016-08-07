@@ -64,7 +64,7 @@ public class Spawner : MonoBehaviour {
 
   void cleanLiveBaddies() {
     for (int i = 0; i < liveBaddies.Count; ++i) {
-      if (!liveBaddies[i].GetComponent<Character>().isAlive()) {
+      if (!liveBaddies[i].GetComponent<Character>().isAlive() || !liveBaddies[i].isActiveAndEnabled) {
         liveBaddies.RemoveAt(i);
         --i;
       }
