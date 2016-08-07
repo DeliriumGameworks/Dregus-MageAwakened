@@ -36,8 +36,10 @@ if [ -d "bin" ]; then
 		exit $?
 	fi
 
-	git tag $VERSION
-	git push --tags
+	if [ "$(git branch | grep '^*')" == "* master" ]; then
+		git tag $VERSION
+		git push --tags
+	fi
 
 	rm -rf Dregus
 
