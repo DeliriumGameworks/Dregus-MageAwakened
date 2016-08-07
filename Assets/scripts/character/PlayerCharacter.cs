@@ -1,29 +1,24 @@
 using UnityEngine;
 using System.Collections;
 
-public class PlayerCharacter : Character {
+public class PlayerCharacter : MonoBehaviour {
+  Character character;
+
   void Start() {
-    start();
+    character = GetComponent<Character>();
+    character.levelUpEvent.AddListener(onLevelUp);
   }
 
-  protected override void start() {
-    base.start();
-  }
-
-  void OnGUI() {
-    BaseLevel levelRules = GameObject.FindObjectOfType<BaseLevel>();
-    Rect rect = new Rect(0, 0, 500, 200);
-
-    if (levelRules.winCheck()) {
-      GUI.Label(rect, "You win!");
-    } else if (levelRules.loseCheck()) {
-      GUI.Label(rect, "You lose!");
-    }
+  void onLevelUp() {
+    character.damageMultiplier *= 1.25f;
+    character.maxHealth *= 1.25f;
+    character.health = character.maxHealth;
   }
 
   // Update is called once per frame
   void Update() {
     Camera camera = GetComponentInChildren<Camera>();
+    /*
 
     if (Input.GetButtonDown("Fire1")) {
       Weapon w = (Weapon) Instantiate(attacks[0].weapon, transform.position + (transform.forward) * 3, camera.transform.rotation);
@@ -33,23 +28,26 @@ public class PlayerCharacter : Character {
 
     if (Input.GetButtonDown("Fire3")) {
       foreach (BaddyCharacter baddy in GameObject.FindObjectsOfType<BaddyCharacter>()) {
-        baddy.applyDamage(5000, Attack.Element.True);
+        baddy.applyDamage(5000, Attack.Element.True, gameObject);
         onKill(baddy);
       }
     }
+    */
   }
 
   void onHitListener(Attack attack, Collider coll) {
-    Debug.Log("onHitListener");
-    Character character = findCharacter(coll);
-    float damage = attack.getBaseDamage() * attack.weapon.damageMultiplier;
+    Character colliderCharacter = Character.findCharacter(coll);
 
-    if (character != null) {
-      if (character.applyDamage(damage, attack.weapon.damageType)) {
-        onKill(character);
+    if (colliderCharacter != null) {
+      Attack.Element damageType = Attack.Element.Physical;
+
+      if (attack.weapon != null) {
+        damageType = attack.weapon.damageType;
+      } else if (attack.projectile != null) {
+        damageType = attack.weapon.damageType;
       }
-    } else {
-      Debug.Log("Would have dealt " + damage + " damage.");
+
+      attack.attack(character, colliderCharacter, damageType);
     }
   }
 

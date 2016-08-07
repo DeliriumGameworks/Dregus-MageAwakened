@@ -1,46 +1,57 @@
 using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
 
-public abstract class BaseLevel : MonoBehaviour {
-  public abstract bool winCheck();
-  public abstract bool loseCheck();
+public class BaseLevel : MonoBehaviour {
+  GameObject[] players;
+  GameObject[] baddies;
+
+  float playersStale = 2f; // seconds until refreshing players
+  float nextPlayersRefresh = 0f;
+
+  void Start() {
+    nextPlayersRefresh = Time.time + playersStale;
+
+    players = refreshPlayers();
+    baddies = refreshBaddies();
+  }
 
   // Update is called once per frame
   void Update() {
+    if (Time.time > nextPlayersRefresh) {
+      nextPlayersRefresh = Time.time + playersStale;
 
+      players = refreshPlayers();
+      baddies = refreshBaddies();
+    }
   }
 
-  protected PlayerCharacter[] findPlayers() {
-    GameObject[] playerTagObjects = GameObject.FindGameObjectsWithTag("Player");
-    PlayerCharacter[] players = new PlayerCharacter[playerTagObjects.Length];
-
-    int cursor = 0;
-
-    foreach (GameObject playerGo in playerTagObjects) {
-      players[cursor] = playerGo.GetComponent<PlayerCharacter>();
-
-      if (players[cursor] != null) {
-        ++cursor;
-      }
-    }
-
+  public GameObject[] findPlayers() {
     return players;
   }
 
-  protected BaddyCharacter[] findBaddies() {
-    GameObject[] enemyTagObjects = GameObject.FindGameObjectsWithTag("Enemy");
-    BaddyCharacter[] baddies = new BaddyCharacter[enemyTagObjects.Length];
+  public GameObject[] refreshPlayers() {
+    PlayerCharacter[] baddyCharacters = FindObjectsOfType<PlayerCharacter>();
+    GameObject[] gameObjects = new GameObject[baddyCharacters.Length];
 
-    int cursor = 0;
-
-    foreach (GameObject baddyGo in enemyTagObjects) {
-      baddies[cursor] = baddyGo.GetComponent<BaddyCharacter>();
-
-      if (baddies[cursor] != null) {
-        ++cursor;
-      }
+    for (int i = 0; i < baddyCharacters.Length; ++i) {
+      gameObjects[i] = baddyCharacters[i].gameObject;
     }
 
+    return gameObjects;
+  }
+
+  public GameObject[] findBaddies() {
     return baddies;
+  }
+
+  public GameObject[] refreshBaddies() {
+    BaddyCharacter[] baddyCharacters = FindObjectsOfType<BaddyCharacter>();
+    GameObject[] gameObjects = new GameObject[baddyCharacters.Length];
+
+    for (int i = 0; i < baddyCharacters.Length; ++i) {
+      gameObjects[i] = baddyCharacters[i].gameObject;
+    }
+
+    return gameObjects;
   }
 }

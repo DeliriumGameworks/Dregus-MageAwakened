@@ -20,16 +20,21 @@ public class Weapon : MonoBehaviour {
   public void addOnHitListener(UnityAction<Attack, Collider> handler, Attack attack) {
     sourceAttack = attack;
 
+    getHitEvent().AddListener(handler);
+  }
+
+  public void clearListeners() {
+    getHitEvent().RemoveAllListeners();
+  }
+
+  public HitEvent getHitEvent() {
     if (hitEvent == null) {
       hitEvent = new HitEvent();
     }
 
-    hitEvent.AddListener(handler);
+    return hitEvent;
   }
 
-  public void clearListeners() {
-    hitEvent.RemoveAllListeners();
-  }
 
   // Use this for initialization
   void Start() {
@@ -45,10 +50,6 @@ public class Weapon : MonoBehaviour {
   }
 
   protected void OnTriggerEnter(Collider coll) {
-    if (hitEvent == null) {
-      return;
-    }
-
-    hitEvent.Invoke(sourceAttack, coll);
+    getHitEvent().Invoke(sourceAttack, coll);
   }
 }

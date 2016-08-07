@@ -1,46 +1,72 @@
 using UnityEngine;
+using UnityEngine.Events;
 using System.Collections;
 
+public class LevelUpEvent : UnityEvent {
+
+}
+
+public class DeathEvent : UnityEvent {
+
+}
+
 public class Character : MonoBehaviour {
+  public LevelUpEvent levelUpEvent = new LevelUpEvent();
+  public DeathEvent deathEvent = new DeathEvent();
+
   public GameObject levelUpPrefab;
   public float levelUpPrefabDuration;
+  public AudioSource playerAudioSource;
+  public AudioClip levelUpAudioClip;
 
-  public double xpEarned { get; protected set; }
-  public double xpWorth { get; protected set; }
-  public double initialXpEarned = 0;
-  public double initialXpWorth = 50;
+  private const int MAX_LEVEL = 126;
+
+  public float xpEarned { get; set; }
+  public float xpWorth { get; set; }
+  public float initialXpEarned = 0;
+  public float initialXpWorth = 50;
 
   public float initialHealth = 1;
-  public float health { get; protected set; }
+  public float maxHealth { get; set; }
+  public float health { get; set; }
 
-  protected Attack[] attacks;
+  public float initialDamageMultiplier = 1;
+  public float damageMultiplier { get; set; }
 
-  double[] levelXpThreshold = {
-    1000, 3000, 4000, 7000, 11000, 18000, 29000, 47000, 76000, 123000,
-    double.MaxValue
-  };
+  public Attack[] attacks;
 
-  int getLevel() {
+  // x is (current level - 1)
+  // xpToLevel = 5 * ((x + 20)^2)
+  public int getLevel() {
+    int level;
+    float xp = 0;
+
+    for (level = 0; xpEarned > xp && level < MAX_LEVEL; ++level) {
+      xp += 15f * (level + 20) * (level + 20);
+
+      if (level > MAX_LEVEL) {
+        return MAX_LEVEL;
+      }
+    }
+    /*
     for (int i = 0; i < levelXpThreshold.Length; ++i) {
       if (xpEarned < levelXpThreshold[i]) {
         return i + 1;
       }
     }
+    */
 
-    return 0;
+    return level;
   }
 
-  protected virtual void start() {
+  void OnEnable() {
     attacks = GetComponents<Attack>();
 
     health = initialHealth;
+    maxHealth = initialHealth;
     xpEarned = initialXpEarned;
     xpWorth = initialXpWorth;
-  }
-
-  // Use this for initialization
-  void Start() {
-    start();
+    damageMultiplier = initialDamageMultiplier;
   }
 
   // Update is called once per frame
@@ -48,7 +74,7 @@ public class Character : MonoBehaviour {
 
   }
 
-  protected Character findCharacter(Collider collider) {
+  public static Character findCharacter(Collider collider) {
     foreach (Component component in collider.gameObject.GetComponents<Component>()) {
       if (component is Character) {
         return (Character) component;
@@ -62,24 +88,24 @@ public class Character : MonoBehaviour {
     return health > 0;
   }
 
-  protected float distanceFrom(GameObject go) {
-    return distanceFrom(go.transform.position);
-  }
+  public bool applyDamage(float damage, Attack.Element damageType, GameObject source) {
+    if (health <= 0) {
+      return false;
+    }
 
-  protected float distanceFrom(Vector3 position) {
-    return (position - this.transform.position).magnitude;
-  }
-
-  public bool applyDamage(float damage, Attack.Element damageType) {
-    Debug.Log("Applying damage: " + damage + " of type " + damageType.ToString());
+    if (!source.name.Contains("Controller")) {
+      Debug.Log("Applying damage: " + damage + " of type " + damageType.ToString() + " from " + source.name + " to " + name);
+    }
 
     health -= damage;
+
+    deathEvent.Invoke();
 
     return health <= 0;
   }
 
   public void onKill(Character enemy) {
-    Debug.Log("Earned " + enemy.xpWorth + " xp");
+    Debug.Log(name + " earned " + enemy.xpWorth + " xp");
 
     int lvl = getLevel();
 
@@ -96,6 +122,13 @@ public class Character : MonoBehaviour {
 
       GameObject prefab = (GameObject) Instantiate(levelUpPrefab);
 
+      if (playerAudioSource != null && levelUpAudioClip != null) {
+        playerAudioSource.clip = levelUpAudioClip;
+        playerAudioSource.loop = false;
+
+        playerAudioSource.Play();
+      }
+
       while (levelUpPrefabDuration + startTime > Time.time) {
         prefab.transform.position = transform.position;
 
@@ -105,5 +138,15 @@ public class Character : MonoBehaviour {
       Debug.Log("Finished");
       Destroy(prefab);
     }
+  }
+
+  void Destroy() {
+    gameObject.SetActive(false);
+  }
+
+  void OnDisable() {
+    CancelInvoke();
+
+    deathEvent.RemoveAllListeners();
   }
 }

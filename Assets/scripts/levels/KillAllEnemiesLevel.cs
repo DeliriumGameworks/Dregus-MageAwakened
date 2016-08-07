@@ -1,10 +1,12 @@
 using UnityEngine;
 using System.Collections;
 
-public class KillAllEnemiesLevel : BaseLevel {
-  public override bool winCheck() {
-    foreach (BaddyCharacter character in findBaddies()) {
-      if (character.isAlive()) {
+public class KillAllEnemiesLevel : MonoBehaviour {
+  public BaseLevel baseLevel;
+
+  public bool winCheck() {
+    foreach (GameObject go in baseLevel.findBaddies()) {
+      if (go.GetComponent<Character>().isAlive()) {
         return false;
       }
     }
@@ -12,9 +14,9 @@ public class KillAllEnemiesLevel : BaseLevel {
     return true;
   }
 
-  public override bool loseCheck() {
-    foreach (PlayerCharacter character in findPlayers()) {
-      if (character.isAlive()) {
+  public bool loseCheck() {
+    foreach (GameObject go in baseLevel.findPlayers()) {
+      if (go.GetComponent<Character>().isAlive()) {
         return false;
       }
     }
@@ -24,6 +26,6 @@ public class KillAllEnemiesLevel : BaseLevel {
 
   // Use this for initialization
   void Start() {
-
+    baseLevel = GetComponent<BaseLevel>();
   }
 }

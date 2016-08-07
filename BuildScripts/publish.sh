@@ -8,11 +8,15 @@ usage() {
 	echo "  SERVER=server_name" 2>&1
 }
 
-if [[ "$1" == "" ]] && [[ "$SERVER" == "" ]]; then
+if [[ "$1" != "" ]]; then
+	SERVER=$1
+fi
+
+if [[ "$SERVER" == "" ]]; then
 	usage
 
 	exit 1
 fi
 
-rsync -r bin/builds $SERVER:/var/www/dregus/mage-awakened/
+rsync -cvr bin/builds $SERVER:/var/www/
 

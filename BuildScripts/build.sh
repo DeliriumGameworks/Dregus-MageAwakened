@@ -8,20 +8,35 @@ usage() {
 	echo "  VERSION=vX.X.X" 2>&1
 }
 
-if [[ "$1" == "" ]] && [[ "$VERSION" == "" ]]; then
+if [[ "$1" != "" ]]; then
+	VERSION=$1
+fi
+
+if [[ "$VERSION" == "" ]]; then
 	usage
 
 	exit 1
 fi
 
 if [ -d "bin" ]; then
-	mkdir -p "$VERSION"
+	WORKING_DIR="bin"
 
-	zip -9 "$VERSION/dregus/mage-awakened.zip" bin/*exe bin/*Data
-	rm -rf bin/*exe bin/*Data
+	cd $WORKING_DIR
+	OUTPUT_DIR="builds/dregus/$VERSION"
+	OUTPUT_FILE="$OUTPUT_DIR/mage-awakened.zip"
 
-	mkdir -p bin/builds
-	mv "$VERSION" bin/builds/
+	mkdir -p "$OUTPUT_DIR"
+
+	mkdir Dregus
+	mv *exe Dregus/
+	mv *Data Dregus/
+
+	rm -f "$OUTPUT_FILE"
+	zip -r -9 "$OUTPUT_FILE" Dregus/*exe Dregus/*Data
+	rm -rf Dregus
+
+	ls -hal "$OUTPUT_FILE"
+	cd -
 else
 	echo "Expected a bin directory at the pwd: $(pwd)"
 fi
