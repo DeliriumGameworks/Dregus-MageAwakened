@@ -9,6 +9,8 @@ public class CharacterAttackEvent : UnityEvent<AICharacter, Attack> {
 public class AICharacter : MonoBehaviour {
   private Character character;
   private AnimatedCharacter animatedCharacter;
+  private Collider collider;
+
   public CharacterAttackEvent characterAttackEvent = new CharacterAttackEvent();
 
   private GameObject target;
@@ -49,6 +51,7 @@ public class AICharacter : MonoBehaviour {
   void OnEnable() {
     character = GetComponent<Character>();
     animatedCharacter = GetComponent<AnimatedCharacter>();
+    getCollider().enabled = true;
 
     searching = false;
     chill();
@@ -58,6 +61,7 @@ public class AICharacter : MonoBehaviour {
   void Update() {
     if (!character.isAlive()) {
       stopMoving();
+      getCollider().enabled = false;
 
       return;
     }
@@ -133,6 +137,14 @@ public class AICharacter : MonoBehaviour {
 
   protected NavMeshAgent getNavMeshAgent() {
     return GetComponent<NavMeshAgent>();
+  }
+
+  protected Collider getCollider() {
+    if (collider == null) {
+      collider = GetComponent<Collider>();
+    }
+
+    return collider;
   }
 
   protected Vector3 randomWanderDestination() {
