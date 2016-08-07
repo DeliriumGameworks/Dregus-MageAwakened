@@ -33,6 +33,8 @@ public class Character : MonoBehaviour {
   public float initialDamageMultiplier = 1;
   public float damageMultiplier { get; set; }
 
+  public bool tagFriendlyFire = false;
+
   public Attack[] attacks;
 
   // x is (current level - 1)
@@ -97,6 +99,12 @@ public class Character : MonoBehaviour {
       Debug.Log("Applying damage: " + damage + " of type " + damageType.ToString() + " from " + source.name + " to " + name);
     }
 
+    if (!tagFriendlyFire) {
+      if (source.CompareTag(tag)) {
+        return false;
+      }
+    }
+
     health -= damage;
 
     deathEvent.Invoke();
@@ -121,6 +129,8 @@ public class Character : MonoBehaviour {
   }
 
   IEnumerator levelUp() {
+    xpWorth *= 1.5f;
+
     if (levelUpPrefab != null) {
       float startTime = Time.time;
 
