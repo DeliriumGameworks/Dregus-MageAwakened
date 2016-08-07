@@ -32,7 +32,13 @@ if [ -d "bin" ]; then
 	mv *Data Dregus/
 
 	rm -f "$OUTPUT_FILE"
-	zip -r -9 "$OUTPUT_FILE" Dregus/*exe Dregus/*Data
+	if ! zip -r -9 "$OUTPUT_FILE" Dregus/*exe Dregus/*Data; then
+		exit $?
+	fi
+
+	git tag $VERSION
+	git push --tags
+
 	rm -rf Dregus
 
 	ls -hal "$OUTPUT_FILE"
