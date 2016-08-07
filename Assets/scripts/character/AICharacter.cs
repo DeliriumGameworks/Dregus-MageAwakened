@@ -348,6 +348,8 @@ public class AICharacter : MonoBehaviour {
   }
 
   bool attack(GameObject target) {
+    transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(target.transform.position - transform.position), 0.5f);
+
     if (lastAttackTime + globalAttackCooldown < Time.time) {
       if (target != null) {
         panic();
