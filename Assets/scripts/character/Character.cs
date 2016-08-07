@@ -101,6 +101,10 @@ public class Character : MonoBehaviour {
 
     deathEvent.Invoke();
 
+    if (health < 0) {
+      health = 0;
+    }
+
     return health <= 0;
   }
 
