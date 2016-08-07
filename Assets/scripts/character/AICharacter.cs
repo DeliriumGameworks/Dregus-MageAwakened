@@ -103,6 +103,7 @@ public class AICharacter : MonoBehaviour {
   }
 
   protected void stopMoving() {
+    getNavMeshAgent().destination = transform.position;
     getNavMeshAgent().Stop();
   }
 
