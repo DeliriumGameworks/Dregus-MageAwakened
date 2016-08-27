@@ -1,49 +1,23 @@
 using UnityEngine;
-using System.Collections.Generic;
+using System.Collections;
+
+using GesturePoints = System.Collections.Generic.List<GesturePoint>;
 
 public class Gesture {
-  enum GestureState : uint {
-    /* 0 through uint.MaxValue - 2 is for state numbers -- should be enough! :) */
-    GESTURE_NOT_STARTED = uint.MaxValue - 1,
-    GESTURE_COMPLETE = uint.MaxValue
+  const int DEFAULT_INDEX = int.MinValue;
+  int gesturePointIndex;
+  public GesturePoints gesturePoints { get; set; }
+
+  public Gesture() {
+    gesturePoints = new GesturePoints();
+    gesturePointIndex = DEFAULT_INDEX;
   }
 
-  List<GestureStep> gesturePoints = new List<GestureStep>();
-  GestureState gestureState = GestureState.GESTURE_NOT_STARTED;
-  uint gestureCount = 0;
+  public void test(Kinesiology kinesiology) {
+    int testIndex = (gesturePointIndex == DEFAULT_INDEX ? 0 : gesturePointIndex + 1);
 
-  public void addGesturePoint(GestureStep gesturePoint) {
-    gesturePoints.Add(gesturePoint);
-  }
-
-  public void clearGesturePoints() {
-    gesturePoints.Clear();
-  }
-
-  public bool inNextPoint(SteamVR_Camera steamvrCamera, SteamVR_TrackedObject gestureDevice) {
-    if (gestureState == GestureState.GESTURE_NOT_STARTED) {
-      if (gesturePoints[0].contains(steamvrCamera, gestureDevice)) {
-        return true;
-      }
+    if (gesturePoints[testIndex].test(kinesiology)) {
+      ++gesturePointIndex;
     }
-
-    return false;
-  }
-
-  public string ToJson() {
-    bool start = true;
-    string str = "{\"gestures\": [";
-
-    foreach (GestureStep g in gesturePoints) {
-      if (!start) {
-        str += ", ";
-      }
-
-      str += g.ToJson();
-
-      start = false;
-    }
-
-    return str + "]}";
   }
 }

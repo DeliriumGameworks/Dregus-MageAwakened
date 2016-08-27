@@ -26,7 +26,6 @@ public class GestureTester : MonoBehaviour {
     getCamera();
 
     GetComponent<SteamVR_TrackedController>().TriggerClicked += new ClickedEventHandler(DoTrigger);
-    GetComponent<SteamVR_TrackedController>().PadTouched += new ClickedEventHandler(DoPad);
 
     calibrationTutorial = FindObjectOfType<CalibrationTutorial>();
   }
@@ -383,15 +382,5 @@ public class GestureTester : MonoBehaviour {
     }
 
     return rightController;
-  }
-
-  void DoPad(object sender, ClickedEventArgs e) {
-    foreach (Gesture gesture in gestures) {
-      if (gesture.inNextPoint(thisCamera, GetComponent<SteamVR_TrackedObject>())) {
-        Debug.Log("Yea" + GestureStep.recordGestureStep(thisCamera, GetComponent<SteamVR_TrackedObject>(), 0).ToJson());
-      } else {
-        Debug.Log("Naw" + GestureStep.recordGestureStep(thisCamera, GetComponent<SteamVR_TrackedObject>(), 0).ToJson());
-      }
-    }
   }
 }

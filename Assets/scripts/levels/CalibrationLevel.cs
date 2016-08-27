@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
 public class CalibrationLevel : MonoBehaviour {
   private const int LINE_LENGTH = 20;
@@ -19,82 +20,114 @@ public class CalibrationLevel : MonoBehaviour {
 
   public GameObject paper;
   public float delayToStartWriting = 7f;
-
-  private CalibrationLevelState calibrationLevelState = CalibrationLevelState.hypnosis;
-  private CalibrationLevelState lastPrint = CalibrationLevelState.finished;
-  private bool writing = false;
-  private SteamVR_Camera vrCamera;
-  private float[] heights;
+  public GameObject saveStaffStand;
+  public GameObject defaultStaffPrefab;
 
   private const float calibrateHeightTime = 3f;
+
+  private CalibrationLevelState calibrationLevelState = CalibrationLevelState.hypnosis;
+  private CalibrationLevelState lastPrintState = CalibrationLevelState.finished;
+  private bool writing = false;
+  private float[] heights;
+  private bool grabbedToStart = false;
+
   public Kinesiology kinesiology { get; private set; }
 
+  public SaveFab[] saveFabs;
+
+  public float tPoseBegin = 0f;
+  public float tPoseLength = 3f;
+  public float tPoseEnd = 0f;
+
+  public float pencilPoseBegin = 0f;
+  public float pencilPoseLength = 3f;
+  public float pencilPoseEnd = 0f;
+
   // Use this for initialization
-  void Start() {
-    kinesiology = new Kinesiology();
-    vrCamera = FindObjectOfType<SteamVR_Camera>();
+  void Awake() {
+    List<Kinesiology> kinesiologies = Kinesiology.getKinesiologies();
+
+    kinesiology = null;
+
+    //Kinesiology.vrCamera = FindObjectOfType<SteamVR_Camera>();
     heights = new float[Mathf.RoundToInt(calibrateHeightTime * 100)];
+
+    saveFabs = saveStaffStand.GetComponentsInChildren<SaveFab>();
+
+    GameObject go;
+
+    for (int i = 0; i < saveFabs.Length; ++i) {
+      if (kinesiologies.Count > i) {
+        go = (GameObject) Instantiate(kinesiologies[i].staffPrefab, saveFabs[i].holster);
+        go.AddComponent<KinesiologyLoader>().kinesiologyToLoad = kinesiologies[i];
+      } else {
+        go = (GameObject) Instantiate(defaultStaffPrefab, saveFabs[i].holster);
+        go.AddComponent<KinesiologyLoader>().kinesiologyToLoad = new Kinesiology();
+      }
+
+      go.transform.localPosition = Vector3.zero;
+
+      go.GetComponent<VRTK.VRTK_InteractableObject>().InteractableObjectGrabbed += staffGrabbed;
+    }
+
+    StartCoroutine(write("Grab a Staff to begin."));
+  }
+
+  void staffGrabbed(object sender, VRTK.InteractableObjectEventArgs e) {
+    grabbedToStart = true;
+
+    //kinesiology = ((VRTK.VRTK_InteractableObject) sender).GetComponent<KinesiologyLoader>().kinesiologyToLoad;
+    kinesiology = null;
+
+    //kinesiology.playerHeightCalibrated.AddListener(OnEyesightCalibrated);
+  }
+
+  private void OnEyesightCalibrated(CalibrationResult c) {
+    if (c.calibrationStatus == CalibrationResult.Status.success) {
+
+    } else {
+      StartCoroutine(writeThenDelay(c.message, 2f));
+    }
   }
 
   // Update is called once per frame
   void Update() {
-    if (lastPrint != calibrationLevelState) {
-      Debug.Log("Transitioned from " + lastPrint + " to " + calibrationLevelState);
-
-      lastPrint = calibrationLevelState;
+    if (grabbedToStart && tPoseBegin == 0f) {
+      tPoseBegin = Time.time + 1f;
+      tPoseEnd = tPoseBegin + tPoseLength;
+      StartCoroutine(write("Stand in a T pose for ~" + tPoseLength + " seconds"));
     }
 
-    switch (calibrationLevelState) {
-      case CalibrationLevelState.hypnosis:
-        if (!writing && Time.time > delayToStartWriting) {
-          Debug.Log("Hypnosis printing.");
-          StartCoroutine(writeThenIncrementState("Please stand up straight and prepare for hypnosis."));
+    if (tPoseEnd != 0f && Time.time > tPoseEnd && pencilPoseBegin == 0f) {
+      pencilPoseBegin = Time.time + 1f;
+      pencilPoseEnd = pencilPoseBegin + pencilPoseLength;
+      StartCoroutine(write("Stand in a pencil pose for ~" + pencilPoseLength + " seconds"));
+    }
 
-          ++calibrationLevelState;
-        }
+    recordTpose();
+    recordPencilPose();
+    saveKinesiology();
+  }
 
-        break;
-      case CalibrationLevelState.height:
-        Debug.Log("Height calibrating.");
-        StartCoroutine(writeCalibrateHeight());
+  void recordTpose() {
+    if (MathUtil.between(tPoseBegin, Time.time, tPoseEnd)) {
+      KinesiologyCalibration.recordPlayerHeight();
+      KinesiologyCalibration.recordPlayerArmspan();
+      KinesiologyCalibration.recordPlayerShoulderHeight();
+      KinesiologyCalibration.recordLeftRight();
+    }
+  }
 
-        ++calibrationLevelState;
-        break;
-      // Skip calculatingHeight state
-      case CalibrationLevelState.heightPrint:
-        if (!writing) {
-          Debug.Log("Height printing.");
-          StartCoroutine(writeStatsThenIncrement());
-        }
+  void recordPencilPose() {
+    if (MathUtil.between(pencilPoseBegin, Time.time, pencilPoseEnd)) {
+      KinesiologyCalibration.recordPlayerTorsoWidth();
+    }
+  }
 
-        break;
-      case CalibrationLevelState.tpose:
-        Debug.Log("Tpose calibrating.");
-        StartCoroutine(writeCalibrateTpose());
-
-        ++calibrationLevelState;
-
-        break;
-      // Skip calculatingTpose state
-      case CalibrationLevelState.tposePrint:
-        if (!writing) {
-          Debug.Log("Tpose printing.");
-          StartCoroutine(writeStatsThenIncrement());
-        }
-
-        break;
-      case CalibrationLevelState.finished:
-        if (!writing && Random.Range(0, 10) == 0) {
-          clear();
-
-          StartCoroutine(writeStats());
-
-          ++calibrationLevelState;
-        }
-
-        break;
-      default:
-        break;
+  void saveKinesiology() {
+    if (pencilPoseEnd != 0f && Time.time > pencilPoseEnd && kinesiology == null) {
+      kinesiology = KinesiologyCalibration.exportToKinesiology();
+      FindObjectOfType<GestureController>().kinesiology = kinesiology;
     }
   }
 
@@ -116,7 +149,7 @@ public class CalibrationLevel : MonoBehaviour {
     if (!writing) {
       writing = true;
 
-      message = SplitToLines(message, ' ', LINE_LENGTH);
+      message = StringUtil.SplitToLines(message, ' ', LINE_LENGTH);
 
       for (int i = 0; i < message.Length; ++i) {
         writeChar(message[i]);
@@ -128,34 +161,12 @@ public class CalibrationLevel : MonoBehaviour {
     }
   }
 
-  public static string SplitToLines(string text, char splitOnCharacter, int maxStringLength) {
-    return SplitToLines(text, new char[1] { splitOnCharacter }, maxStringLength);
+  IEnumerator writeThenDelay(string message, float delay) {
+    yield return StartCoroutine(write(message));
+
+    yield return new WaitForSeconds(delay);
   }
 
-  public static string SplitToLines(string text, char[] splitOnCharacters, int maxStringLength) {
-    var sb = new System.Text.StringBuilder();
-    var index = 0;
-
-    while (text.Length > index) {
-      // start a new line, unless we've just started
-      if (index != 0)
-        sb.AppendLine();
-
-      // get the next substring, else the rest of the string if remainder is shorter than `maxStringLength`
-      var splitAt = index + maxStringLength <= text.Length
-          ? text.Substring(index, maxStringLength).LastIndexOfAny(splitOnCharacters)
-          : text.Length - index;
-
-      // if can't find split location, take `maxStringLength` characters
-      splitAt = (splitAt == -1) ? maxStringLength : splitAt;
-
-      // add result to collection & increment index
-      sb.Append(text.Substring(index, splitAt).Trim());
-      index += splitAt;
-    }
-
-    return sb.ToString();
-  }
 
   IEnumerator writeThenIncrementState(string message) {
     yield return StartCoroutine(write(message));
@@ -163,15 +174,12 @@ public class CalibrationLevel : MonoBehaviour {
     ++calibrationLevelState;
   }
 
-  IEnumerator writeThenDelay(string message, float delay) {
-    yield return StartCoroutine(write(message));
-
-    yield return new WaitForSeconds(delay);
-  }
-
   IEnumerator writeCalibrateHeight() {
     yield return StartCoroutine(writeThenDelay("Look straight ahead for " + Mathf.RoundToInt(calibrateHeightTime) + " seconds", 0.5f));
 
+    //yield return StartCoroutine(kinesiology.calibratePlayerHeight(calibrateHeightTime));
+
+    /*
     float startTime = Time.time;
 
     LayerMask layerMask = LayerMask.GetMask("floor");
@@ -179,7 +187,7 @@ public class CalibrationLevel : MonoBehaviour {
     int heightsIter = 0;
 
     if (startTime + calibrateHeightTime > Time.time) {
-      Physics.Raycast(vrCamera.transform.position, -Vector3.up, out raycastHit, 4f, layerMask);
+      Physics.Raycast(Kinesiology.vrCamera.transform.position, -Vector3.up, out raycastHit, 4f, layerMask);
 
       heights[heightsIter] = raycastHit.distance;
       ++heightsIter;
@@ -191,11 +199,15 @@ public class CalibrationLevel : MonoBehaviour {
 
     System.Array.Sort(heights);
 
+    Debug.Log("heightsIter: " + heightsIter);
+
     if (heightsIter % 2 == 0) {
       kinesiology.eyesHeight = ((heights[Mathf.FloorToInt(heightsIter / 2f)] + heights[Mathf.FloorToInt(heightsIter / 2f) - 1]) / 2);
     } else {
       kinesiology.eyesHeight = heights[Mathf.FloorToInt(heightsIter / 2f)];
     }
+
+    */
 
     Debug.Log("Kinesiology's eyesHeight calibrated");
 
@@ -207,7 +219,8 @@ public class CalibrationLevel : MonoBehaviour {
 
     yield return StartCoroutine(writeThenDelay(tposeMessage, 1.5f));
 
-    string errorMessage = kinesiology.tryDetectSteamVR();
+    /*
+    string errorMessage = kinesiology.calibratePlayerArms();
 
     while (errorMessage != null) {
       Debug.Log(errorMessage);
@@ -216,8 +229,9 @@ public class CalibrationLevel : MonoBehaviour {
 
       yield return StartCoroutine(writeThenDelay(tposeMessage, 1.5f));
 
-      errorMessage = kinesiology.tryDetectSteamVR();
+      errorMessage = kinesiology.calibratePlayerArms();
     }
+    */
 
     Debug.Log("Kinesiology's armSpan and shoulderHeight calibrated");
 
