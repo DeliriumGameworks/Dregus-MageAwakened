@@ -40,6 +40,9 @@ public class GestureLibrary : MonoBehaviour {
 
     beg.gestureRules.Add(waistHeightOrHigher);
 
+    beg.name = "Nova Initial State";
+    beg.description = "Both Controllers Waist Height or Higher";
+
     mNova.gesturePoints.Add(beg);
 
     GesturePoint fin = new GesturePoint();
@@ -48,6 +51,9 @@ public class GestureLibrary : MonoBehaviour {
 
     closeToFloor.gestureRuleHandApplication = GestureRule.GestureRuleHandApplication.both;
     closeToFloor.maxDistanceFromGround = 0.33f;
+
+    fin.name = "Nova Final State";
+    fin.description = "Both Controllers Close to Floor";
 
     fin.gestureRules.Add(closeToFloor);
 

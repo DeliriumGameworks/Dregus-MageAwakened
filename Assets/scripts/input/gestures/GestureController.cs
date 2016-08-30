@@ -17,6 +17,9 @@ public class GestureController : MonoBehaviour {
   }
 
   void fireNova() {
-    Instantiate(fireNovaPrefab, this.transform);
+    GameObject nova = (GameObject) Instantiate(fireNovaPrefab, transform, false);
+
+    nova.transform.Rotate(Vector3.left, 90);
+    nova.transform.Translate(Vector3.up * kinesiology.eyesHeight / 3);
   }
 }

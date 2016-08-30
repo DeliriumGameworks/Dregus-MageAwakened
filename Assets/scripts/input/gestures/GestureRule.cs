@@ -43,7 +43,7 @@ public class GestureRule {
           return false;
         }
         if (!testTriggerDepressed(kinesiology.left) || !testTriggerDepressed(kinesiology.right)) {
-
+          return false;
         }
         break;
       default:

@@ -13,7 +13,29 @@ using GestureRules = System.Collections.Generic.List<GestureRule>;
  * one GesturePoint.
  */
 public class GesturePoint {
+  private string mName = null;
+  private string mDescription = null;
+
   public GestureRules gestureRules { get; set; }
+
+  public string name {
+    get {
+      return (mName == null ? "" : mName);
+    }
+    set {
+      mName = value;
+    }
+  }
+
+  public string description {
+    get {
+      return (mDescription == null ? "" : mDescription);
+    }
+    set {
+      mDescription = value;
+    }
+  }
+
   public UnityEvent onTriggered = new UnityEvent();
 
   public GesturePoint() {
