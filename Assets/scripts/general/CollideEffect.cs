@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System;
 
-public class CollideEffect : MonoBehaviour, IExpires {
+public class CollideEffect : MonoBehaviour {
   public float birth { get; set; }
 
   public float lifespan { get; set; }

@@ -38,6 +38,19 @@ public class KinesiologyCalibration {
     }
   }
 
+  // TODO: Properly handle the case where we don't have any confidence one way or the other.
+  public static Controller left {
+    get {
+      return (left0Confidence > 0f ? controllers[0] : controllers[1]);
+    }
+  }
+
+  public static Controller right {
+    get {
+      return (left0Confidence <= 0f ? controllers[0] : controllers[1]);
+    }
+  }
+
   private static SortedFloatList playerHeightList = new SortedFloatList();
   private static SortedFloatList playerArmspanList = new SortedFloatList();
   private static SortedFloatList playerShoulderHeightList = new SortedFloatList();
@@ -52,6 +65,13 @@ public class KinesiologyCalibration {
 
   private KinesiologyCalibration() {
     throw new Exception("Constructor not implemented");
+  }
+
+  public static void preload(Kinesiology kinesiology) {
+    playerHeightList.Add(kinesiology.eyesHeight);
+    playerArmspanList.Add(kinesiology.armSpan);
+    playerShoulderHeightList.Add(kinesiology.shoulderHeight);
+    playerTorsoWidthList.Add(kinesiology.torsoWidth);
   }
 
   /**
@@ -183,18 +203,6 @@ public class KinesiologyCalibration {
     }
   }
 
-  public static Controller left {
-    get {
-      return (left0Confidence > 0f ? controllers[0] : controllers[1]);
-    }
-  }
-
-  public static Controller right {
-    get {
-      return (left0Confidence < 0f ? controllers[0] : controllers[1]);
-    }
-  }
-
   public static float cameraControllerAngle(Controller controller) {
     Vector3 cameraXZ = new Vector3(vrCamera.transform.position.x, controller.transform.position.y, vrCamera.transform.position.z);
 
@@ -237,11 +245,15 @@ public class KinesiologyCalibration {
 
     kinesiology.eyesHeight = KinesiologyCalibration.getCurrentPlayerHeight();
     kinesiology.armSpan = KinesiologyCalibration.getCurrentPlayerArmspan();
-    kinesiology.armLength = (KinesiologyCalibration.getCurrentPlayerArmspan() - KinesiologyCalibration.getCurrentPlayerTorsoWidth()) / 2;
-    kinesiology.creationDate = new DateTime();
+
+    // Don't overwrite an existing armLength in case we loaded.
+    if (kinesiology.armLength == 0f) {
+      kinesiology.armLength = (KinesiologyCalibration.getCurrentPlayerArmspan() - KinesiologyCalibration.getCurrentPlayerTorsoWidth()) / 2;
+    }
+
+    kinesiology.torsoWidth = KinesiologyCalibration.getCurrentPlayerTorsoWidth();
     kinesiology.shoulderHeight = KinesiologyCalibration.getCurrentPlayerShoulderHeight();
-    kinesiology.left = left;
-    kinesiology.right = right;
+    kinesiology.creationDate = new DateTime();
 
     exported = "yes";
 

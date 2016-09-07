@@ -6,6 +6,8 @@ using GesturePoints = System.Collections.Generic.List<GesturePoint>;
 public class Gesture {
   const int DEFAULT_INDEX = 0;
 
+  public string name { get; set; }
+
   /**
    * The current unpassed index.
    */
@@ -28,13 +30,25 @@ public class Gesture {
 
       ++gesturePointIndex;
 
+      // TODO Record Vector3.positions for controllers et al so we can start doing tests based on that.
+
       if (gesturePointIndex == gesturePoints.Count) {
         reset();
+      } else {
+        Vector3 lAnchorPoint = kinesiology.left.transform.position;
+        Vector3 rAnchorPoint = kinesiology.right.transform.position;
+
+        foreach (GestureRule gestureRule in gesturePoints[gesturePointIndex].gestureRules) {
+          gestureRule.leftAnchorPoint = lAnchorPoint;
+          gestureRule.rightAnchorPoint = rAnchorPoint;
+        }
       }
     }
   }
 
   public void reset() {
+    Debug.Log("Resetting Gesture " + name);
+
     gesturePointIndex = DEFAULT_INDEX;
   }
 }

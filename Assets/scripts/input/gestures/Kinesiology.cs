@@ -14,19 +14,127 @@ public class Kinesiology {
   [NonSerialized]
   private static KinesiologyList kinesiologies;
   [NonSerialized]
-  private Controller[] controllers = new Controller[2];
-  [NonSerialized]
   private string filename;
 
-  public DateTime creationDate;
-  public System.Guid playerId;
-  public string playerName;
-  public float armSpan;
-  public float shoulderHeight;
-  public float armLength;
-  public float eyesHeight;
-  public int kinesiologyVersion;
-  public GameObject staffPrefab;
+  [NonSerialized]
+  GameObject mStaffPrefab;
+  public GameObject staffPrefab {
+    get {
+      return mStaffPrefab;
+    }
+    set {
+      mStaffPrefab = value;
+    }
+  }
+
+  string mPlayerName;
+  public string playerName {
+    get {
+      return mPlayerName;
+    }
+    set {
+      mPlayerName = value;
+      saved = false;
+    }
+  }
+
+  DateTime mCreationDate;
+  public DateTime creationDate {
+    get {
+      return mCreationDate;
+    }
+    set {
+      mCreationDate = value;
+      saved = false;
+    }
+  }
+
+  System.Guid mPlayerId;
+  public System.Guid playerId {
+    get {
+      return mPlayerId;
+    }
+    set {
+      mPlayerId = value;
+      saved = false;
+    }
+  }
+
+  float mArmSpan;
+  public float armSpan {
+    get {
+      return mArmSpan;
+    }
+    set {
+      mArmSpan = value;
+      saved = false;
+    }
+  }
+
+  float mShoulderHeight;
+  public float shoulderHeight {
+    get {
+      return mShoulderHeight;
+    }
+    set {
+      mShoulderHeight = value;
+      saved = false;
+    }
+  }
+
+  float mArmLength;
+  public float armLength {
+    get {
+      return mArmLength;
+    }
+    set {
+      mArmLength = value;
+      saved = false;
+    }
+  }
+
+  float mEyesHeight;
+  public float eyesHeight {
+    get {
+      return mEyesHeight;
+    }
+    set {
+      mEyesHeight = value;
+      saved = false;
+    }
+  }
+
+  float mTorsoWidth;
+  public float torsoWidth {
+    get {
+      return mTorsoWidth;
+    }
+    set {
+      mTorsoWidth = value;
+      saved = false;
+    }
+  }
+
+  int mKinesiologyVersion;
+  public int kinesiologyVersion {
+    get {
+      return mKinesiologyVersion;
+    }
+    private set {
+      mKinesiologyVersion = value;
+      saved = false;
+    }
+  }
+
+  bool mSaved;
+  public bool saved {
+    get {
+      return mSaved;
+    }
+    private set {
+      mSaved = value;
+    }
+  }
 
   public Kinesiology() {
     playerId = new System.Guid();
@@ -36,23 +144,18 @@ public class Kinesiology {
     armLength = 0f;
     eyesHeight = 0f;
     kinesiologyVersion = KINESIOLOGY_VERSION;
+    saved = false;
   }
 
   public Controller left {
     get {
-      return controllers[0];
-    }
-    set {
-      controllers[0] = value;
+      return DataPersistenceManager.Controllers.left;
     }
   }
 
   public Controller right {
     get {
-      return controllers[1];
-    }
-    set {
-      controllers[1] = value;
+      return DataPersistenceManager.Controllers.right;
     }
   }
 
@@ -62,7 +165,7 @@ public class Kinesiology {
       kinesiologies = new KinesiologyList();
 
       for (int i = 0; i < filenames.Length; ++i) {
-        kinesiologies[i] = load(filenames[i]);
+        kinesiologies.Add(load(filenames[i]));
       }
     }
 
@@ -80,13 +183,19 @@ public class Kinesiology {
       kinesiology = (Kinesiology) bf.Deserialize(file);
       file.Close();
 
+      kinesiology.kinesiologyVersion = KINESIOLOGY_VERSION;
       kinesiology.filename = filename;
+      kinesiology.saved = true;
     }
 
     return kinesiology;
   }
 
-  private static void save(Kinesiology kinesiology, string filename) {
+  public static void save(Kinesiology kinesiology, string filename) {
+    if (kinesiology.saved) {
+      return;
+    }
+
     if (!filename.EndsWith(".kin")) {
       filename += ".kin";
     }
@@ -100,9 +209,14 @@ public class Kinesiology {
 
     file.Close();
 
+    Debug.Log(file.Name + "  Application.persistentDataPath:" + Application.persistentDataPath);
+
+    kinesiology.saved = true;
+
     for (int i = 0; i < kinesiologies.Count; ++i) {
       if (kinesiologies[i].playerId == kinesiology.playerId) {
         kinesiologies[i] = kinesiology;
+
         return;
       }
     }

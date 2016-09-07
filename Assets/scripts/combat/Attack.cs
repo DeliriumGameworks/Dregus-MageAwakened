@@ -3,13 +3,27 @@ using UnityEngine.Events;
 using System.Collections;
 
 [System.Serializable]
-public class AttackEvent : UnityEvent<Character, Character, Attack, float> {
+public class AttackLandedEvent : UnityEvent<Character, Character, Attack, float> {
 
 }
 
 public class Attack : MonoBehaviour {
-  public AttackEvent attackEvent = new AttackEvent();
-  public enum Element { True, Physical, Acid, Fire, Frost, Lightning }
+  [HideInInspector]
+  public Character attackingCharacter { get; set; }
+  [HideInInspector]
+  public AttackLandedEvent attackEvent = new AttackLandedEvent();
+  [HideInInspector]
+  public UnityEvent initialized = new UnityEvent();
+  [HideInInspector]
+  public UnityEvent wielded = new UnityEvent();
+  [HideInInspector]
+  public UnityEvent swung = new UnityEvent();
+  [HideInInspector]
+  public UnityEvent swingFinished = new UnityEvent();
+  [HideInInspector]
+  public UnityEvent finalized = new UnityEvent();
+
+  public enum Element { undefined, True, Physical, Acid, Fire, Frost, Lightning }
 
   public float baseMaximumDamage = 0;
   public float variance = 0;
@@ -24,9 +38,65 @@ public class Attack : MonoBehaviour {
 
   public string[] validAnimationNames;
 
-  public SoundEffect soundEffect;
+  AudioSource audioSource;
 
-  public void attack(Character attacker, Character target, Element damageType) {
+  public AudioClip[] initSfx;
+  public AudioClip[] continuousSfx;
+  public AudioClip[] wieldSfx;
+  public AudioClip[] swingSfx;
+  public AudioClip[] landAttackSfx;
+  public AudioClip[] finalizeSfx;
+
+  void Awake() {
+    init();
+  }
+
+  void OnEnable() {
+    init();
+  }
+
+  public void init() {
+    if (audioSource == null) {
+      audioSource = this.gameObject.GetComponent<AudioSource>();
+
+      if (audioSource == null) {
+        audioSource = this.gameObject.AddComponent<AudioSource>();
+      }
+    }
+
+    initialized.Invoke();
+
+    playOnce(getRandomAudioClip(initSfx));
+    playContinuously(getRandomAudioClip(continuousSfx));
+  }
+
+  public void swing() {
+    swung.Invoke();
+    playOnce(getRandomAudioClip(swingSfx));
+  }
+
+  public void wield() {
+    wielded.Invoke();
+    playOnce(getRandomAudioClip(wieldSfx));
+  }
+
+  public void finishSwing() {
+    swingFinished.Invoke();
+  }
+
+  public void finalize() {
+    playOnce(getRandomAudioClip(finalizeSfx));
+  }
+
+  public void landAttack(Character attacker, Character target, Element damageType) {
+    if (attacker == null) {
+      if (attackingCharacter == null) {
+        throw new System.Exception("Unable to find the attacking character.");
+      }
+
+      attacker = attackingCharacter;
+    }
+
     float damage = getBaseDamage() * attacker.damageMultiplier;
 
     if (target.applyDamage(damage, damageType, attacker.gameObject)) {
@@ -34,25 +104,41 @@ public class Attack : MonoBehaviour {
     }
 
     attackEvent.Invoke(attacker, target, this, damage);
+
+    playOnce(getRandomAudioClip(landAttackSfx));
   }
 
   private float getBaseDamage() {
     return Random.Range(baseMaximumDamage * (1 - variance), baseMaximumDamage);
   }
 
-  public void triggerSwingSound() {
-    if (soundEffect != null && soundEffect.isValid()) {
-      soundEffect.playOnceDefault();
+  AudioClip getRandomAudioClip(AudioClip[] audioClips) {
+    if (audioClips == null || audioClips.Length == 0) {
+      return null;
     }
+
+    return audioClips[Random.Range(0, audioClips.Length - 1)];
   }
 
-  // Use this for initialization
-  void Start() {
+  void playOnce(AudioClip sfx) {
+    if (sfx == null) {
+      return;
+    }
 
+    audioSource.clip = sfx;
+    audioSource.loop = false;
+
+    audioSource.Play();
   }
 
-  // Update is called once per frame
-  void Update() {
+  void playContinuously(AudioClip sfx) {
+    if (sfx == null) {
+      return;
+    }
 
+    audioSource.clip = sfx;
+    audioSource.loop = true;
+
+    audioSource.Play();
   }
 }

@@ -43,13 +43,13 @@ public class CalibrationLevel : MonoBehaviour {
   public float pencilPoseLength = 3f;
   public float pencilPoseEnd = 0f;
 
-  // Use this for initialization
+  public bool finishedCalibration = false;
+
   void Awake() {
     List<Kinesiology> kinesiologies = Kinesiology.getKinesiologies();
 
     kinesiology = null;
 
-    //Kinesiology.vrCamera = FindObjectOfType<SteamVR_Camera>();
     heights = new float[Mathf.RoundToInt(calibrateHeightTime * 100)];
 
     saveFabs = saveStaffStand.GetComponentsInChildren<SaveFab>();
@@ -58,8 +58,14 @@ public class CalibrationLevel : MonoBehaviour {
 
     for (int i = 0; i < saveFabs.Length; ++i) {
       if (kinesiologies.Count > i) {
-        go = (GameObject) Instantiate(kinesiologies[i].staffPrefab, saveFabs[i].holster);
+        if (kinesiologies[i].staffPrefab == null) {
+          go = (GameObject) Instantiate(defaultStaffPrefab, saveFabs[i].holster);
+        } else {
+          go = (GameObject) Instantiate(kinesiologies[i].staffPrefab, saveFabs[i].holster);
+        }
         go.AddComponent<KinesiologyLoader>().kinesiologyToLoad = kinesiologies[i];
+
+        saveFabs[i].textObject.text = kinesiologies[i].playerName;
       } else {
         go = (GameObject) Instantiate(defaultStaffPrefab, saveFabs[i].holster);
         go.AddComponent<KinesiologyLoader>().kinesiologyToLoad = new Kinesiology();
@@ -70,16 +76,13 @@ public class CalibrationLevel : MonoBehaviour {
       go.GetComponent<VRTK.VRTK_InteractableObject>().InteractableObjectGrabbed += staffGrabbed;
     }
 
-    StartCoroutine(write("Grab a Staff to begin."));
+    StartCoroutine(write("Grab an orb to begin."));
   }
 
   void staffGrabbed(object sender, VRTK.InteractableObjectEventArgs e) {
     grabbedToStart = true;
 
-    //kinesiology = ((VRTK.VRTK_InteractableObject) sender).GetComponent<KinesiologyLoader>().kinesiologyToLoad;
-    kinesiology = null;
-
-    //kinesiology.playerHeightCalibrated.AddListener(OnEyesightCalibrated);
+    kinesiology = ((VRTK.VRTK_InteractableObject) sender).GetComponent<KinesiologyLoader>().kinesiologyToLoad;
   }
 
   private void OnEyesightCalibrated(CalibrationResult c) {
@@ -90,23 +93,33 @@ public class CalibrationLevel : MonoBehaviour {
     }
   }
 
-  // Update is called once per frame
   void Update() {
-    if (grabbedToStart && tPoseBegin == 0f) {
-      tPoseBegin = Time.time + 1f;
-      tPoseEnd = tPoseBegin + tPoseLength;
-      StartCoroutine(write("Stand in a T pose for ~" + tPoseLength + " seconds"));
-    }
+    if (finishedCalibration) return;
 
-    if (tPoseEnd != 0f && Time.time > tPoseEnd && pencilPoseBegin == 0f) {
-      pencilPoseBegin = Time.time + 1f;
-      pencilPoseEnd = pencilPoseBegin + pencilPoseLength;
-      StartCoroutine(write("Stand in a pencil pose for ~" + pencilPoseLength + " seconds"));
-    }
+    if (kinesiology == null || !kinesiology.saved) {
+      if (grabbedToStart && tPoseBegin == 0f) {
+        tPoseBegin = Time.time + 3f;
+        tPoseEnd = tPoseBegin + tPoseLength;
+        StartCoroutine(write("Stand in a T pose for ~" + tPoseLength + " seconds"));
+      }
 
-    recordTpose();
-    recordPencilPose();
-    saveKinesiology();
+      if (tPoseEnd != 0f && Time.time > tPoseEnd && pencilPoseBegin == 0f) {
+        pencilPoseBegin = Time.time + 3f;
+        pencilPoseEnd = pencilPoseBegin + pencilPoseLength;
+        StartCoroutine(write("Stand in a pencil pose for ~" + pencilPoseLength + " seconds"));
+      }
+
+      recordTpose();
+      recordPencilPose();
+      saveKinesiology();
+    } else if (kinesiology.saved) {
+      FindObjectOfType<GestureController>().kinesiology = kinesiology;
+      DataPersistenceManager.loadedKinesiology = kinesiology;
+
+      StartCoroutine(writeStats());
+
+      finishedCalibration = true;
+    }
   }
 
   void recordTpose() {
@@ -125,9 +138,24 @@ public class CalibrationLevel : MonoBehaviour {
   }
 
   void saveKinesiology() {
-    if (pencilPoseEnd != 0f && Time.time > pencilPoseEnd && kinesiology == null) {
+    if (pencilPoseEnd != 0f && Time.time > pencilPoseEnd) {
       kinesiology = KinesiologyCalibration.exportToKinesiology();
       FindObjectOfType<GestureController>().kinesiology = kinesiology;
+
+      StartCoroutine(writeStats());
+
+      for (int i = 0; i < saveFabs.Length; ++i) {
+        if (saveFabs[i].GetComponent<KinesiologyLoader>() == null) {
+          saveFabs[i].textObject.text = kinesiology.playerName;
+          break;
+        }
+      }
+
+      foreach (LevelLoadTrigger t in FindObjectsOfType<LevelLoadTrigger>()) {
+        t.enabled = true;
+      }
+
+      finishedCalibration = true;
     }
   }
 
@@ -177,38 +205,6 @@ public class CalibrationLevel : MonoBehaviour {
   IEnumerator writeCalibrateHeight() {
     yield return StartCoroutine(writeThenDelay("Look straight ahead for " + Mathf.RoundToInt(calibrateHeightTime) + " seconds", 0.5f));
 
-    //yield return StartCoroutine(kinesiology.calibratePlayerHeight(calibrateHeightTime));
-
-    /*
-    float startTime = Time.time;
-
-    LayerMask layerMask = LayerMask.GetMask("floor");
-    RaycastHit raycastHit;
-    int heightsIter = 0;
-
-    if (startTime + calibrateHeightTime > Time.time) {
-      Physics.Raycast(Kinesiology.vrCamera.transform.position, -Vector3.up, out raycastHit, 4f, layerMask);
-
-      heights[heightsIter] = raycastHit.distance;
-      ++heightsIter;
-
-      yield return new WaitForFixedUpdate();
-    }
-
-    System.Array.Resize<float>(ref heights, heightsIter);
-
-    System.Array.Sort(heights);
-
-    Debug.Log("heightsIter: " + heightsIter);
-
-    if (heightsIter % 2 == 0) {
-      kinesiology.eyesHeight = ((heights[Mathf.FloorToInt(heightsIter / 2f)] + heights[Mathf.FloorToInt(heightsIter / 2f) - 1]) / 2);
-    } else {
-      kinesiology.eyesHeight = heights[Mathf.FloorToInt(heightsIter / 2f)];
-    }
-
-    */
-
     Debug.Log("Kinesiology's eyesHeight calibrated");
 
     ++calibrationLevelState;
@@ -219,20 +215,6 @@ public class CalibrationLevel : MonoBehaviour {
 
     yield return StartCoroutine(writeThenDelay(tposeMessage, 1.5f));
 
-    /*
-    string errorMessage = kinesiology.calibratePlayerArms();
-
-    while (errorMessage != null) {
-      Debug.Log(errorMessage);
-
-      yield return StartCoroutine(writeThenDelay(errorMessage, 1.5f));
-
-      yield return StartCoroutine(writeThenDelay(tposeMessage, 1.5f));
-
-      errorMessage = kinesiology.calibratePlayerArms();
-    }
-    */
-
     Debug.Log("Kinesiology's armSpan and shoulderHeight calibrated");
 
     ++calibrationLevelState;
@@ -241,35 +223,24 @@ public class CalibrationLevel : MonoBehaviour {
   IEnumerator writeStats() {
     clear();
 
-    string[] messages = new string[3] {
-      "Height: " + (Mathf.Round(100f * kinesiology.eyesHeight) / 100f) + "m",
-      "Shoulders: " + (Mathf.Round(100f * kinesiology.shoulderHeight) / 100f) + "m",
-      "Armspan: " + (Mathf.Round(100f * kinesiology.armSpan) / 100f) + "m"
+    string[] messages = new string[] {
+      "Height: " + (Mathf.Round(100f * kinesiology.eyesHeight) / 100f) + "m ",
+      "Shoulders: " + (Mathf.Round(100f * kinesiology.shoulderHeight) / 100f) + "m ",
+      "Armspan: " + (Mathf.Round(100f * kinesiology.armSpan) / 100f) + "m ",
+      "TorsoWid: " + (Mathf.Round(100f * kinesiology.torsoWidth) / 100f) + "m ",
+      "Armlen: " + (Mathf.Round(100f * kinesiology.armLength) / 100f) + "m ",
+      "Punch that rotating thing to continue"
     };
 
-    Debug.Log(
-        messages[0] + "\n" +
-        messages[1] + "\n" +
-        messages[2]
-        );
+    string message = "";
 
-    if (kinesiology.eyesHeight > 0f) {
-      yield return StartCoroutine(append(messages[0]));
-
-      writeChar('\n');
+    for (int i = 0; i < messages.Length; ++i) {
+      message += messages[i];
     }
 
-    if (kinesiology.shoulderHeight > 0f) {
-      yield return StartCoroutine(append(messages[1]));
+    Debug.Log(message);
 
-      writeChar('\n');
-    }
-
-    if (kinesiology.armSpan > 0f) {
-      yield return StartCoroutine(append(messages[2]));
-
-      writeChar('\n');
-    }
+    yield return StartCoroutine(write(message));
   }
 
   IEnumerator writeStatsThenIncrement() {

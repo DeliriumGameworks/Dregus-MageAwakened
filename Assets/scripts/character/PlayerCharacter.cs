@@ -47,7 +47,7 @@ public class PlayerCharacter : MonoBehaviour {
         damageType = attack.weapon.damageType;
       }
 
-      attack.attack(character, colliderCharacter, damageType);
+      attack.landAttack(character, colliderCharacter, damageType);
     }
   }
 

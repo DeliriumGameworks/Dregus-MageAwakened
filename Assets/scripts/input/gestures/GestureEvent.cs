@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class GestureEvent : UnityEngine.Events.UnityEvent<string> {
+public class GestureEvent : UnityEngine.Events.UnityEvent<Gesture> {
 }

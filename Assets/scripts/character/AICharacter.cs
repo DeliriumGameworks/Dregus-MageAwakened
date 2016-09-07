@@ -363,7 +363,7 @@ public class AICharacter : MonoBehaviour {
         if (attack.weapon != null) {
           Weapon weapon = attack.weapon;
 
-          attack.triggerSwingSound();
+          attack.swing();
 
           weapon.addOnHitListener(onHitListener, attack);
         } else if (attack.projectile != null) {
@@ -415,7 +415,7 @@ public class AICharacter : MonoBehaviour {
         damageType = attack.weapon.damageType;
       }
 
-      attack.attack(GetComponent<Character>(), colliderCharacter, damageType);
+      attack.landAttack(GetComponent<Character>(), colliderCharacter, damageType);
     }
 
     attack.weapon.clearListeners();
