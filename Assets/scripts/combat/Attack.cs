@@ -94,7 +94,7 @@ public class Attack : MonoBehaviour {
     playOnce(getRandomAudioClip(finalizeSfx));
   }
 
-  public void landAttack(Character attacker, Character target, Element damageType) {
+  public void landAttack(Character attacker, Character target, Element damageType, float additionalDamageMultiplier = 1f) {
     if (attacker == null) {
       if (attackingCharacter == null) {
         throw new System.Exception("Unable to find the attacking character.");
@@ -105,7 +105,7 @@ public class Attack : MonoBehaviour {
 
     if (attacker == target && !selfFire) return;
 
-    float damage = getBaseDamage() * attacker.damageMultiplier;
+    float damage = getBaseDamage() * attacker.damageMultiplier * additionalDamageMultiplier;
 
     if (target.applyDamage(damage, damageType, attacker.gameObject)) {
       attacker.onKill(target);
