@@ -23,6 +23,12 @@ public class Attack : MonoBehaviour {
   [HideInInspector]
   public UnityEvent finalized = new UnityEvent();
 
+  [Tooltip("Whether or not the attack can damage teammates of the player performing the attack")]
+  public bool friendlyFire = false;
+
+  [Tooltip("Whether or not the attack can damage the player performing the attack")]
+  public bool selfFire = false;
+
   public enum Element { undefined, True, Physical, Acid, Fire, Frost, Lightning }
 
   public float baseMaximumDamage = 0;
@@ -96,6 +102,8 @@ public class Attack : MonoBehaviour {
 
       attacker = attackingCharacter;
     }
+
+    if (attacker == target && !selfFire) return;
 
     float damage = getBaseDamage() * attacker.damageMultiplier;
 
